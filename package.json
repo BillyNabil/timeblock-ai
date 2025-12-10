@@ -59,7 +59,7 @@
   },
   "build": {
     "appId": "com.timeblock.ai",
-    "productName": "TimeBlock.ai",
+    "productName": "TimeBlock",
     "directories": {
       "buildResources": "build/icons",
       "output": "dist"
