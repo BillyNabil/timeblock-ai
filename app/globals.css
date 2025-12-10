@@ -112,23 +112,20 @@ h6 {
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: #ffffff;
-    border-left: 3px solid #000000;
-    border-radius: 0;
+    background: #fef9c3;
+    /* Yellow-100 */
+    border-left: 3px solid #000;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #fca5a5;
-    /* Light Red */
-    border: 3px solid #000000;
+    background-color: #ec4899;
+    /* Pink-500 */
+    border: 3px solid #000;
     border-radius: 9999px;
-    /* Pill shape */
-    box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.4);
-    /* Highlight */
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #f472b6;
-    /* Pink-400 */
+    background-color: #db2777;
+    /* Pink-600 */
   }
 }

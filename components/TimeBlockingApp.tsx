@@ -46,46 +46,49 @@ function BacklogArea({ tasks, onDelete, onEdit, onDone, onFocus }: { tasks: Task
     });
 
     return (
-        <Card
-            ref={setNodeRef}
-            className={`
-        flex-1 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all h-full flex flex-col overflow-hidden rounded-xl
-        ${isOver ? 'bg-blue-100' : 'bg-cyan-200'}
-      `}
-        >
-            <CardHeader className="pb-2 pt-4 px-4 shrink-0 bg-white border-b-[3px] border-black">
-                <CardTitle className="text-lg flex items-center gap-2 text-black font-black uppercase">
-                    <Inbox className="w-5 h-5 text-black" fill="currentColor" />
-                    To Do List
-                </CardTitle>
-                <CardDescription className="text-xs font-bold text-black/70">Drag tasks to schedule</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-4 overflow-y-auto flex-1 custom-scrollbar">
-                <AnimatePresence mode="popLayout">
-                    {tasks.map(task => (
-                        <motion.div
-                            key={task.id}
-                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            layoutId={task.id}
-                            className="relative hover:z-50"
-                        >
-                            <DraggableTask task={task} onDelete={onDelete} onEdit={onEdit} onDone={onDone} onFocus={onFocus} />
-                        </motion.div>
-                    ))}
-                </AnimatePresence>
-                {tasks.length === 0 && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="text-center text-black/50 font-bold italic mt-8 text-sm"
-                    >
-                        No tasks! Relax or add more.
-                    </motion.div>
-                )}
-            </CardContent>
-        </Card>
+        <div className="flex-1 h-full flex flex-col overflow-visible shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl" ref={setNodeRef}>
+            <Card
+                className={`
+            flex-1 border-[3px] border-black h-full flex flex-col overflow-hidden rounded-xl shadow-none hover:translate-x-0 hover:translate-y-0 hover:shadow-none
+            ${isOver ? 'bg-blue-100' : 'bg-cyan-200'}
+          `}
+            >
+                <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4 shrink-0 bg-white border-b-[3px] border-black">
+                    <CardTitle className="text-base sm:text-lg flex items-center gap-2 text-black font-black uppercase">
+                        <Inbox className="w-4 h-4 sm:w-5 sm:h-5 text-black" fill="currentColor" />
+                        To Do List
+                    </CardTitle>
+                    <CardDescription className="text-[10px] sm:text-xs font-bold text-black/70">Drag tasks to schedule</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+                    <div className="space-y-4 p-4 overflow-y-auto flex-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+                        <AnimatePresence mode="popLayout">
+                            {tasks.map(task => (
+                                <motion.div
+                                    key={task.id}
+                                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.8 }}
+                                    layoutId={task.id}
+                                    className="relative"
+                                >
+                                    <DraggableTask task={task} onDelete={onDelete} onEdit={onEdit} onDone={onDone} onFocus={onFocus} />
+                                </motion.div>
+                            ))}
+                        </AnimatePresence>
+                        {tasks.length === 0 && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="h-full flex flex-col items-center justify-center text-center text-black/50 font-bold italic text-sm pb-8"
+                            >
+                                No tasks! Relax or add more.
+                            </motion.div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
 
@@ -95,6 +98,7 @@ export default function TimeBlockingApp() {
 
     const [backlog, setBacklog] = useState<Task[]>([]);
     const [schedule, setSchedule] = useState<Task[]>([]);
+    const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [focusTask, setFocusTask] = useState<Task | null>(null);
     const [showStats, setShowStats] = useState(false);
@@ -173,19 +177,19 @@ export default function TimeBlockingApp() {
         // Check if user chose "keep logged in"
         const keepLoggedIn = localStorage.getItem('keepLoggedIn');
         const tempSession = sessionStorage.getItem('tempSession');
-        
+
         // If user chose NOT to keep logged in and this is a new app session, sign out
         if (keepLoggedIn === 'false' && !tempSession) {
             supabase.auth.signOut();
             setCheckingSession(false);
             return;
         }
-        
+
         // Set a timeout fallback in case Supabase is slow/unreachable
         const timeout = setTimeout(() => {
             setCheckingSession(false);
         }, 5000); // 5 second timeout
-        
+
         supabase.auth.getSession().then(({ data: { session } }) => {
             clearTimeout(timeout);
             setSession(session);
@@ -212,28 +216,41 @@ export default function TimeBlockingApp() {
         if (!session) return;
 
         async function loadTasks() {
-            const { data, error } = await supabase
+            // 1. Fetch Active Tasks
+            const activeRes = await supabase
                 .from('tasks')
                 .select('*')
                 .neq('status', 'done');
 
-            if (error) {
-                console.error("Error loading tasks:", error);
+            // 2. Fetch Tasks Completed TODAY
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+
+            const doneRes = await supabase
+                .from('tasks')
+                .select('*')
+                .eq('status', 'done')
+                .gte('finished_at', todayStart.toISOString());
+
+            if (activeRes.error || doneRes.error) {
+                console.error("Error loading tasks:", activeRes.error || doneRes.error);
             }
 
-            if (!data || data.length === 0) {
-                // Fallback for demo if DB empty
-                // Use valid UUIDs to prevent 400 errors if these get pushed back
+            const activeData = activeRes.data || [];
+            const doneData = doneRes.data || [];
+            const allData = [...activeData, ...doneData];
+
+            if (allData.length === 0) {
                 setBacklog([]);
                 setSchedule([]);
+                setCompletedTasks([]);
             } else {
                 // Map DB columns to Frontend Model
-                const tasks: Task[] = data.map((d: any) => {
+                const mapTask = (d: any): Task => {
                     // Extract "HH:mm" from ISO string if present
                     let timeStr = null;
                     if (d.start_time) {
                         const date = new Date(d.start_time);
-                        // Get HH:mm in local time
                         const hours = date.getHours().toString().padStart(2, '0');
                         const minutes = date.getMinutes().toString().padStart(2, '0');
                         timeStr = `${hours}:${minutes}`;
@@ -242,14 +259,19 @@ export default function TimeBlockingApp() {
                     return {
                         id: d.id,
                         title: d.title,
-                        duration: d.duration_minutes || 30, // Map duration_minutes -> duration
+                        duration: d.duration_minutes || 30,
                         status: d.status,
                         start_time: timeStr,
-                        color: d.color
+                        color: d.color,
+                        finished_at: d.finished_at
                     };
-                });
-                setBacklog(tasks.filter(t => !t.start_time));
-                setSchedule(tasks.filter(t => t.start_time));
+                };
+
+                const tasks = allData.map(mapTask);
+
+                setBacklog(tasks.filter(t => t.status !== 'done' && !t.start_time));
+                setSchedule(tasks.filter(t => t.status !== 'done' && t.start_time));
+                setCompletedTasks(tasks.filter(t => t.status === 'done'));
             }
         }
 
@@ -328,6 +350,7 @@ export default function TimeBlockingApp() {
             async () => {
                 setBacklog(prev => prev.filter(t => t.id !== id));
                 setSchedule(prev => prev.filter(t => t.id !== id));
+                setCompletedTasks(prev => prev.filter(t => t.id !== id));
 
                 if (session) {
                     await supabase.from('tasks').delete().eq('id', id);
@@ -351,13 +374,15 @@ export default function TimeBlockingApp() {
         // For now, let's just delete it from view but maybe we want a Done list?
         // User asked for "Done Button", assuming it marks as completed. 
         // Let's update status to 'done' and remove from active views.
-        const updatedTask = { ...task, status: 'done' };
+        const finishedAt = new Date().toISOString();
+        const updatedTask = { ...task, status: 'done' as const, finished_at: finishedAt };
 
         setBacklog(prev => prev.filter(t => t.id !== task.id));
         setSchedule(prev => prev.filter(t => t.id !== task.id));
+        setCompletedTasks(prev => [...prev, updatedTask]);
 
         if (session) {
-            await supabase.from('tasks').update({ status: 'done' }).eq('id', task.id);
+            await supabase.from('tasks').update({ status: 'done', finished_at: finishedAt }).eq('id', task.id);
         }
 
         playSound('success');
@@ -613,24 +638,24 @@ export default function TimeBlockingApp() {
 
 
                 {/* Header */}
-                <div className="flex justify-between items-center p-4 mb-4 shrink-0 bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">
-                    <div className="flex items-center gap-4">
+                <div className="flex flex-wrap justify-between items-center p-2 sm:p-3 lg:p-4 mb-2 sm:mb-4 shrink-0 bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl gap-2">
+                    <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink">
                         <div
-                            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                            className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity min-w-0"
                             onClick={() => setShowProfileModal(true)}
                             title="Edit Profile"
                         >
-                            <div className="w-12 h-12 rounded-full bg-yellow-300 flex items-center justify-center text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                                <User size={20} strokeWidth={3} />
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-yellow-300 flex items-center justify-center text-black border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
+                                <User size={18} strokeWidth={3} />
                             </div>
-                            <div>
-                                <h2 className="font-black text-xl truncate max-w-[150px] md:max-w-xs text-black uppercase tracking-tight leading-none">
+                            <div className="min-w-0">
+                                <h2 className="font-black text-sm sm:text-lg lg:text-xl truncate max-w-[100px] sm:max-w-[150px] lg:max-w-xs text-black uppercase tracking-tight leading-none">
                                     {session.user.user_metadata?.full_name || session.user.email}
                                 </h2>
                                 {/* Gamification Bar */}
-                                <div className="flex items-center gap-2 mt-1">
-                                    <div className="bg-black text-white px-2 py-0.5 rounded text-xs font-bold">LVL {level}</div>
-                                    <div className="text-xs font-bold text-gray-500">{xp} XP</div>
+                                <div className="flex items-center gap-1 sm:gap-2 mt-1">
+                                    <div className="bg-black text-white px-1.5 sm:px-2 py-0.5 rounded text-[10px] sm:text-xs font-bold">LVL {level}</div>
+                                    <div className="text-[10px] sm:text-xs font-bold text-gray-500">{xp} XP</div>
                                     <StreakFlame streak={streak} />
                                 </div>
                             </div>
@@ -639,7 +664,7 @@ export default function TimeBlockingApp() {
 
                         {/* Weather Widget */}
                         {weather && (
-                            <div className="hidden md:flex flex-col items-center bg-blue-100 p-1 px-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                            <div className="hidden lg:flex flex-col items-center bg-blue-100 p-1 px-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                                 <div className="flex items-center gap-1">
                                     <CloudSun size={16} strokeWidth={3} />
                                     <span className="font-black text-sm">{weather.temp}°C</span>
@@ -648,82 +673,82 @@ export default function TimeBlockingApp() {
                         )}
                     </div>
 
-                    <div className="z-20 text-center flex-1 hidden md:block">
-                        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 rounded-xl border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1">
-                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border-2 border-black">
-                                <svg viewBox="0 0 512 512" className="w-5 h-5">
-                                    <circle cx="256" cy="256" r="200" fill="white" stroke="#8B5CF6" strokeWidth="20"/>
-                                    <rect x="246" y="120" width="20" height="80" rx="10" fill="#8B5CF6"/>
-                                    <rect x="246" y="256" width="20" height="60" rx="10" fill="#EC4899" transform="rotate(90 256 256)"/>
-                                    <circle cx="256" cy="256" r="16" fill="#1F2937"/>
+                    <div className="z-20 text-center flex-1 hidden lg:block">
+                        <div className="inline-flex items-center gap-2 bg-purple-500 px-3 py-1.5 rounded-xl border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1">
+                            <div className="w-7 h-7 bg-white rounded-full flex items-center justify-center border-2 border-black">
+                                <svg viewBox="0 0 512 512" className="w-4 h-4">
+                                    <circle cx="256" cy="256" r="200" fill="white" stroke="#8B5CF6" strokeWidth="20" />
+                                    <rect x="246" y="120" width="20" height="80" rx="10" fill="#8B5CF6" />
+                                    <rect x="246" y="256" width="20" height="60" rx="10" fill="#EC4899" transform="rotate(90 256 256)" />
+                                    <circle cx="256" cy="256" r="16" fill="#1F2937" />
                                 </svg>
                             </div>
-                            <h1 className="text-2xl font-black text-white tracking-tight">
+                            <h1 className="text-xl font-black text-white tracking-tight">
                                 TimeBlock
                             </h1>
                         </div>
                     </div>
 
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                         <Button
                             onClick={() => handleAutoSchedule()}
-                            className="btn-neo bg-indigo-500 hover:bg-indigo-400 text-white h-9 hover:scale-105 transition-transform"
+                            className="btn-neo bg-indigo-500 hover:bg-indigo-400 text-white h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm hover:scale-105 transition-transform"
                             title="Auto Schedule with AI"
                         >
-                            <Zap size={16} className="mr-1 fill-yellow-300 text-yellow-300 animate-pulse" /> Auto
+                            <Zap size={14} className="sm:mr-1 fill-yellow-300 text-yellow-300 animate-pulse" /> <span className="hidden sm:inline">Auto</span>
                         </Button>
                         <Button
                             onClick={() => setShowStats(true)}
-                            className="btn-neo bg-white hover:bg-gray-100 text-black h-9 hover:scale-105 transition-transform"
+                            className="btn-neo bg-white hover:bg-gray-100 text-black h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm hover:scale-105 transition-transform"
                             title="View Analytics"
                         >
-                            <BarChart2 size={16} className="mr-1" /> Stats
+                            <BarChart2 size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Stats</span>
                         </Button>
                         <Button
                             onClick={() => openAddModal()}
-                            className="btn-neo bg-primary hover:bg-pink-400 text-white h-9"
+                            className="btn-neo bg-primary hover:bg-pink-400 text-white h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
                         >
-                            <Plus size={16} className="mr-1" /> Add
+                            <Plus size={14} className="sm:mr-1" /> <span className="hidden sm:inline">Add</span>
                         </Button>
                         <Button
                             onClick={() => supabase.auth.signOut()}
-                            className="btn-neo bg-red-500 hover:bg-red-400 text-white h-9"
+                            className="btn-neo bg-red-500 hover:bg-red-400 text-white h-8 sm:h-9 px-2 sm:px-3"
                         >
-                            <LogOut size={16} className="mr-1" />
+                            <LogOut size={14} />
                         </Button>
                     </div>
                 </div >
 
 
 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full h-full min-h-0 pb-2">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-5 w-full flex-1 min-h-0 p-2 sm:p-3">
 
-                    {/* Left: Schedule (Takes 2 columns) */}
+                    {/* Left: Schedule (Takes 3 columns on large screens) */}
                     <motion.div
                         initial={{ x: -50, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.2, type: "spring" }}
-                        className="md:col-span-3 h-full min-h-0"
+                        className="lg:col-span-3 min-h-0 flex flex-col"
                     >
-                        <Card className="flex flex-col overflow-hidden h-full border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] rounded-xl bg-white/60 backdrop-blur-sm">
-                            <CardHeader className="flex flex-row justify-between items-center py-4 px-6 border-b-[3px] border-black shrink-0 bg-yellow-100">
+                        <Card className="flex flex-col overflow-hidden flex-1 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl bg-white">
+                            <CardHeader className="flex flex-row justify-between items-center py-2 sm:py-4 px-3 sm:px-6 border-b-[3px] border-black shrink-0 bg-yellow-100">
                                 <div>
-                                    <CardTitle className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2 underline decoration-dashed decoration-2 underline-offset-4">
-                                        <Sparkles className="text-yellow-400 fill-yellow-400 w-6 h-6" />
+                                    <CardTitle className="text-lg sm:text-2xl font-black text-foreground tracking-tight flex items-center gap-2 underline decoration-dashed decoration-2 underline-offset-4">
+                                        <Sparkles className="text-yellow-400 fill-yellow-400 w-5 h-5 sm:w-6 sm:h-6" />
                                         Today&apos;s Focus
                                     </CardTitle>
                                 </div>
                                 <Button
                                     onClick={() => openAddModal('09:00')}
                                     size="icon"
-                                    className="rounded-full w-10 h-10 border-[3px] border-black bg-black text-white hover:scale-110 hover:rotate-90 transition-all duration-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
+                                    className="rounded-full w-8 h-8 sm:w-10 sm:h-10 border-[3px] border-black bg-black text-white hover:scale-110 hover:rotate-90 transition-all duration-300 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]"
                                 >
-                                    <Plus size={20} strokeWidth={4} />
+                                    <Plus size={16} strokeWidth={4} />
                                 </Button>
                             </CardHeader>
 
-                            <div className="flex-1 overflow-y-auto p-6 space-y-2 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2 custom-scrollbar">
                                 {HOURS.map(time => {
                                     // Filter tasks that fall within this hour block (e.g. 14:00 to 14:59)
                                     const tasksAtTime = schedule.filter(t => {
@@ -756,55 +781,40 @@ export default function TimeBlockingApp() {
                         </Card>
                     </motion.div>
 
-                    {/* Right: Backlog (Takes 1 column) */}
+                    {/* Right: Backlog (Takes 2 columns on large screens) */}
                     <motion.div
                         initial={{ x: 50, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ delay: 0.3, type: "spring" }}
-                        className="flex flex-col gap-4 md:col-span-2 h-full min-h-0"
+                        className="flex flex-col gap-2 sm:gap-4 lg:col-span-2 min-h-0 overflow-visible"
                     >
 
                         {/* Quick Add Block */}
-                        <Card className="bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl shrink-0 overflow-hidden">
-                            <CardHeader className="pb-2 pt-4 px-4 bg-purple-200 border-b-[3px] border-black">
-                                <div className="flex justify-between items-center">
-                                    <CardTitle className="text-lg text-black font-black underline decoration-dashed decoration-2 underline-offset-4">Inbox</CardTitle>
-                                    <Button variant="link" size="sm" onClick={() => openAddModal()} className="h-auto p-0 font-bold text-black hover:text-primary">Add New</Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="pb-4 px-4 pt-4">
-                                <Input
-                                    readOnly
-                                    onClick={() => openAddModal()}
-                                    placeholder="+ Quick add..."
-                                    className="cursor-pointer border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] h-10 text-sm font-bold bg-white hover:bg-gray-50 transition-colors focus:translate-x-1 focus:translate-y-1 focus:shadow-none"
-                                />
-                            </CardContent>
-                        </Card>
+                        <div className="relative shrink-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl">
+                            <Card className="bg-white border-[3px] border-black rounded-xl overflow-hidden shadow-none">
+                                <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-4 bg-purple-200 border-b-[3px] border-black rounded-t-xl">
+                                    <div className="flex justify-between items-center">
+                                        <CardTitle className="text-base sm:text-lg text-black font-black underline decoration-dashed decoration-2 underline-offset-4">Inbox</CardTitle>
+                                        <Button variant="link" size="sm" onClick={() => openAddModal()} className="h-auto p-0 font-bold text-black hover:text-primary text-xs sm:text-sm">Add New</Button>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="pb-3 sm:pb-4 px-3 sm:px-4 pt-3 sm:pt-4">
+                                    <Input
+                                        readOnly
+                                        onClick={() => openAddModal()}
+                                        placeholder="+ Quick add..."
+                                        className="cursor-pointer border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] h-9 sm:h-10 text-sm font-bold bg-white hover:bg-gray-50 transition-colors focus:translate-x-1 focus:translate-y-1 focus:shadow-none"
+                                    />
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                        <div className="flex-1 min-h-0 flex flex-col">
+                        <div className="flex-1 min-h-[150px] flex flex-col overflow-visible pb-1">
                             <BacklogArea tasks={backlog} onDelete={handleDelete} onEdit={handleEditTask} onDone={handleDoneTask} onFocus={setFocusTask} />
                         </div>
 
-                        <motion.div
-                            whileHover={{ rotate: 2, scale: 1.05 }}
-                            transition={{ type: "spring", stiffness: 300 }}
-                            className="relative hover:z-50"
-                        >
-                            <Card className="bg-yellow-300 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-black shrink-0 rounded-xl cursor-default">
-                                <CardContent className="p-3">
-                                    <h3 className="font-black text-sm mb-0.5 flex items-center gap-2">
-                                        🚀 Pro Tip
-                                    </h3>
-                                    <p className="text-xs font-bold leading-tight">
-                                        Drag tasks to time-block your day!
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-
-                        <div className="mt-auto space-y-4 relative z-0">
-                            <DailyProgressWidget tasks={[...schedule, ...backlog]} />
+                        <div className="mt-auto grid grid-cols-2 gap-2 sm:gap-4 relative z-0 hidden lg:grid">
+                            <DailyProgressWidget tasks={[...schedule, ...backlog, ...completedTasks]} />
                             <CountdownToFreedom />
                         </div>
                     </motion.div>

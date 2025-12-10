@@ -4,6 +4,13 @@ const url = require('url');
 
 let mainWindow;
 
+function getIconPath() {
+    // Use the bundled .ico in production and the PNG while developing
+    return app.isPackaged
+        ? path.join(process.resourcesPath, 'icons', 'win', 'icon.ico')
+        : path.join(__dirname, 'public', 'icon.png');
+}
+
 function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
 
@@ -19,7 +26,7 @@ function createWindow() {
         },
         title: "TimeBlock.ai",
         backgroundColor: '#ffffff',
-        icon: path.join(__dirname, 'public', 'icon.png'),
+        icon: getIconPath(),
         autoHideMenuBar: true
     });
 
@@ -49,7 +56,10 @@ function createWindow() {
     });
 }
 
-app.on('ready', createWindow);
+app.whenReady().then(() => {
+    app.setAppUserModelId('com.timeblock.ai');
+    createWindow();
+});
 
 app.on('window-all-closed', function () {
     if (process.platform !== 'darwin') {

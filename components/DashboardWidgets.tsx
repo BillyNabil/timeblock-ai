@@ -9,7 +9,7 @@ import { Zap, Timer, Flame, CheckCircle2 } from "lucide-react";
 // --- STREAK WIDGET ---
 export function StreakFlame({ streak }: { streak: number }) {
     return (
-        <div className="flex items-center gap-1 bg-orange-100 border-[3px] border-black px-3 py-1 rounded-full shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:scale-105 transition-transform cursor-help" title={`${streak} Day Streak!`}>
+        <div className="flex items-center gap-0.5 sm:gap-1 bg-orange-100 border-2 sm:border-[3px] border-black px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] sm:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:scale-105 transition-transform cursor-help" title={`${streak} Day Streak!`}>
             <motion.div
                 animate={{
                     scale: [1, 1.2, 1],
@@ -18,9 +18,9 @@ export function StreakFlame({ streak }: { streak: number }) {
                 }}
                 transition={{ duration: 0.8, repeat: Infinity }}
             >
-                <Flame className={`w-5 h-5 ${streak > 0 ? "fill-orange-500 text-orange-600" : "text-gray-400"}`} />
+                <Flame className={`w-3 h-3 sm:w-5 sm:h-5 ${streak > 0 ? "fill-orange-500 text-orange-600" : "text-gray-400"}`} />
             </motion.div>
-            <span className="font-black text-black text-sm">{streak}</span>
+            <span className="font-black text-black text-[10px] sm:text-sm">{streak}</span>
         </div>
     );
 }
@@ -39,7 +39,7 @@ export function DailyDonut({ total, completed }: { total: number, completed: num
         <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="relative flex items-center justify-center p-2"
+            className="relative flex items-center justify-center p-2 shrink-0"
         >
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-3xl font-black text-black leading-none">{percentage}%</span>
@@ -53,8 +53,8 @@ export function DailyDonut({ total, completed }: { total: number, completed: num
                         data={data}
                         cx={64}
                         cy={64}
-                        innerRadius={40}
-                        outerRadius={60}
+                        innerRadius={36}
+                        outerRadius={52}
                         startAngle={90}
                         endAngle={-270}
                         dataKey="value"
@@ -110,17 +110,17 @@ export function CountdownToFreedom() {
     }, []);
 
     return (
-        <Card className="bg-cyan-200 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-black rounded-xl overflow-hidden relative">
+        <Card className="bg-cyan-200 border-2 sm:border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-black rounded-lg sm:rounded-xl overflow-hidden relative">
             {/* Progress Bar Background */}
             <div className="absolute top-0 left-0 h-full bg-cyan-300 transition-all duration-1000" style={{ width: `${progress}%`, opacity: 0.5 }} />
 
-            <CardContent className="p-4 relative z-10 flex items-center justify-between">
+            <CardContent className="p-2 sm:p-4 relative z-10 flex items-center justify-between">
                 <div>
-                    <h3 className="font-black text-xs uppercase opacity-70 flex items-center gap-1"><Timer size={12} /> Freedom In</h3>
-                    <div className="text-2xl font-black tracking-tighter">{timeLeft}</div>
+                    <h3 className="font-black text-[10px] sm:text-xs uppercase opacity-70 flex items-center gap-1"><Timer size={10} className="sm:hidden" /><Timer size={12} className="hidden sm:inline" /> Freedom In</h3>
+                    <div className="text-lg sm:text-2xl font-black tracking-tighter">{timeLeft}</div>
                 </div>
-                <div className="w-10 h-10 bg-white border-[3px] border-black rounded-full flex items-center justify-center animate-pulse">
-                    <Zap className="fill-yellow-400 text-black w-6 h-6" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white border-2 sm:border-[3px] border-black rounded-full flex items-center justify-center animate-pulse">
+                    <Zap className="fill-yellow-400 text-black w-4 h-4 sm:w-6 sm:h-6" />
                 </div>
             </CardContent>
         </Card>
@@ -132,15 +132,15 @@ export function DailyProgressWidget({ tasks }: { tasks: any[] }) {
     const completed = tasks.filter(t => t.status === 'done' || t.finished_at).length;
 
     return (
-        <Card className="bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl overflow-hidden mt-4">
-            <CardHeader className="pb-0 pt-4 px-4 bg-pink-200 border-b-[3px] border-black">
-                <CardTitle className="text-lg text-black font-black uppercase flex items-center gap-2">
-                    <CheckCircle2 className="w-5 h-5" /> Daily Grind
+        <Card className="bg-white border-2 sm:border-[3px] border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg sm:rounded-xl overflow-hidden h-full">
+            <CardHeader className="pb-0 pt-2 sm:pt-4 px-3 sm:px-4 bg-pink-200 border-b-2 sm:border-b-[3px] border-black">
+                <CardTitle className="text-sm sm:text-lg text-black font-black uppercase flex items-center gap-1 sm:gap-2">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" /> Daily Grind
                 </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex flex-col items-center">
+            <CardContent className="p-2 sm:p-4 flex flex-col items-center">
                 <DailyDonut total={total} completed={completed} />
-                <p className="text-xs font-bold text-center mt-2 max-w-[150px]">
+                <p className="text-[10px] sm:text-xs font-bold text-center mt-1 sm:mt-2 max-w-[150px]">
                     {completed === total && total > 0 ? "You're a machine! 🤖" : "Keep crushing it!"}
                 </p>
             </CardContent>

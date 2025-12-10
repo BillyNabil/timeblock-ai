@@ -4,40 +4,32 @@ const path = require('path');
 
 const svgPath = path.join(__dirname, 'public', 'icon.svg');
 const pngPath = path.join(__dirname, 'public', 'icon.png');
-const icoPath = path.join(__dirname, 'public', 'icon.ico');
+const png1024Path = path.join(__dirname, 'build', 'icon.png');
 
 async function generateIcons() {
-    // Dynamic import for ESM module
-    const pngToIco = (await import('png-to-ico')).default;
-    
     const svgBuffer = fs.readFileSync(svgPath);
+    
+    // Create build folder if not exists
+    if (!fs.existsSync(path.join(__dirname, 'build'))) {
+        fs.mkdirSync(path.join(__dirname, 'build'));
+    }
 
-    // Generate PNG 512x512
+    // Generate PNG 512x512 for public
     await sharp(svgBuffer)
         .resize(512, 512)
         .png()
         .toFile(pngPath);
-    console.log('✅ Generated icon.png (512x512)');
+    console.log('✅ Generated public/icon.png (512x512)');
 
-    // Generate multiple PNG sizes for ICO
-    const sizes = [16, 32, 48, 64, 128, 256];
-    const pngBuffers = [];
-    
-    for (const size of sizes) {
-        const buffer = await sharp(svgBuffer)
-            .resize(size, size)
-            .png()
-            .toBuffer();
-        pngBuffers.push(buffer);
-    }
-    
-    // Convert to ICO
-    const icoBuffer = await pngToIco(pngBuffers);
-    fs.writeFileSync(icoPath, icoBuffer);
-    console.log('✅ Generated icon.ico');
+    // Generate PNG 1024x1024 for electron-icon-builder
+    await sharp(svgBuffer)
+        .resize(1024, 1024)
+        .png()
+        .toFile(png1024Path);
+    console.log('✅ Generated build/icon.png (1024x1024)');
     
     console.log('');
-    console.log('🎉 All icons generated successfully!');
+    console.log('🎉 Now run: npx electron-icon-builder --input=build/icon.png --output=build');
 }
 
 generateIcons().catch(console.error);
