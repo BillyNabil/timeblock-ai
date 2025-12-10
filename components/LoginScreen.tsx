@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { CheckCircle2, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 export function LoginScreen() {
     const [email, setEmail] = useState('');
@@ -16,6 +16,8 @@ export function LoginScreen() {
     const [isSignUp, setIsSignUp] = useState(false);
     const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [keepLoggedIn, setKeepLoggedIn] = useState(true);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -37,6 +39,8 @@ export function LoginScreen() {
                     setMessage({ text: '🚀 Registration successful! Please check your email.', type: 'success' });
                 } else if (data.session) {
                     // Auto logged in
+                    // Save keep logged in preference
+                    localStorage.setItem('keepLoggedIn', 'true');
                 }
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
@@ -44,6 +48,15 @@ export function LoginScreen() {
                     password,
                 });
                 if (error) throw error;
+                
+                // Save keep logged in preference
+                if (keepLoggedIn) {
+                    localStorage.setItem('keepLoggedIn', 'true');
+                } else {
+                    localStorage.setItem('keepLoggedIn', 'false');
+                    // Set session to expire when browser/app closes
+                    sessionStorage.setItem('tempSession', 'true');
+                }
             }
         } catch (error: any) {
             setMessage({ text: error.message || 'Authentication failed', type: 'error' });
@@ -170,16 +183,40 @@ export function LoginScreen() {
                                             </button>
                                         )}
                                     </div>
-                                    <Input
-                                        id="password"
-                                        required
-                                        type="password"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={e => setPassword(e.target.value)}
-                                        className="text-lg border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none transition-all"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            required
+                                            type={showPassword ? "text" : "password"}
+                                            placeholder="••••••••"
+                                            value={password}
+                                            onChange={e => setPassword(e.target.value)}
+                                            className="text-lg border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-xl focus-visible:ring-0 focus-visible:ring-offset-0 focus:translate-x-[2px] focus:translate-y-[2px] focus:shadow-none transition-all pr-12"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black transition-colors p-1"
+                                            tabIndex={-1}
+                                        >
+                                            {showPassword ? <EyeOff size={20} strokeWidth={2.5} /> : <Eye size={20} strokeWidth={2.5} />}
+                                        </button>
+                                    </div>
                                 </div>
+
+                                {/* Keep me logged in */}
+                                {!isSignUp && (
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setKeepLoggedIn(!keepLoggedIn)}
+                                            className={`w-6 h-6 rounded-md border-[3px] border-black flex items-center justify-center transition-all ${keepLoggedIn ? 'bg-green-400 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white'}`}
+                                        >
+                                            {keepLoggedIn && <CheckCircle2 size={14} strokeWidth={3} />}
+                                        </button>
+                                        <span className="font-bold text-sm text-gray-700">Keep me logged in</span>
+                                    </div>
+                                )}
 
                                 <Button
                                     type="submit"

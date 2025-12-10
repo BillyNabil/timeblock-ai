@@ -170,6 +170,17 @@ export default function TimeBlockingApp() {
 
     // Auth Handling
     useEffect(() => {
+        // Check if user chose "keep logged in"
+        const keepLoggedIn = localStorage.getItem('keepLoggedIn');
+        const tempSession = sessionStorage.getItem('tempSession');
+        
+        // If user chose NOT to keep logged in and this is a new app session, sign out
+        if (keepLoggedIn === 'false' && !tempSession) {
+            supabase.auth.signOut();
+            setCheckingSession(false);
+            return;
+        }
+        
         // Set a timeout fallback in case Supabase is slow/unreachable
         const timeout = setTimeout(() => {
             setCheckingSession(false);
@@ -638,9 +649,19 @@ export default function TimeBlockingApp() {
                     </div>
 
                     <div className="z-20 text-center flex-1 hidden md:block">
-                        <h1 className="text-4xl font-black text-black tracking-tighter drop-shadow-sm leading-none bg-yellow-300 px-4 py-1 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1 inline-block">
-                            TIME BLOCKER
-                        </h1>
+                        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 rounded-xl border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] -rotate-1">
+                            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center border-2 border-black">
+                                <svg viewBox="0 0 512 512" className="w-5 h-5">
+                                    <circle cx="256" cy="256" r="200" fill="white" stroke="#8B5CF6" strokeWidth="20"/>
+                                    <rect x="246" y="120" width="20" height="80" rx="10" fill="#8B5CF6"/>
+                                    <rect x="246" y="256" width="20" height="60" rx="10" fill="#EC4899" transform="rotate(90 256 256)"/>
+                                    <circle cx="256" cy="256" r="16" fill="#1F2937"/>
+                                </svg>
+                            </div>
+                            <h1 className="text-2xl font-black text-white tracking-tight">
+                                TimeBlock
+                            </h1>
+                        </div>
                     </div>
 
 

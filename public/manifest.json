@@ -3,17 +3,12 @@
     "short_name": "TimeBlock",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#fef08a",
-    "theme_color": "#fef08a",
+    "background_color": "#8B5CF6",
+    "theme_color": "#8B5CF6",
     "orientation": "portrait",
     "icons": [
         {
-            "src": "https://fav.farm/⚡",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "https://fav.farm/⚡",
+            "src": "icon.png",
             "sizes": "512x512",
             "type": "image/png"
         }

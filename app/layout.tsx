@@ -13,10 +13,10 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "TimeBlock.ai ⚡",
+  title: "TimeBlock.ai",
   description: "Focus on what matters with AI-powered time blocking.",
   icons: {
-    icon: "https://fav.farm/⚡",
+    icon: "/icon.png",
   }
 };
 

@@ -51,10 +51,17 @@ export function LandingPage({ onStart }: Props) {
                 transition={{ duration: 0.8, type: 'spring' }}
                 className="z-10 text-center max-w-4xl px-4 py-20"
             >
-                <div className="mb-6 inline-block bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full px-4 py-1.5 rotate-[-2deg]">
-                    <span className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
-                        <Zap size={16} className="fill-yellow-400 text-black" />
-                        The #1 App for Fun Focus
+                <div className="mb-8 inline-flex items-center gap-3 bg-white border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-full px-5 py-2 rotate-[-2deg]">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-black">
+                        <svg viewBox="0 0 512 512" className="w-6 h-6">
+                            <circle cx="256" cy="256" r="200" fill="white" stroke="#8B5CF6" strokeWidth="20"/>
+                            <rect x="246" y="120" width="20" height="80" rx="10" fill="#8B5CF6"/>
+                            <rect x="246" y="256" width="20" height="60" rx="10" fill="#EC4899" transform="rotate(90 256 256)"/>
+                            <circle cx="256" cy="256" r="16" fill="#1F2937"/>
+                        </svg>
+                    </div>
+                    <span className="font-black text-lg uppercase tracking-wider">
+                        TimeBlock.ai
                     </span>
                 </div>
 

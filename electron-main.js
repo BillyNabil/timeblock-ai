@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen, protocol } = require('electron');
+const { app, BrowserWindow, screen, protocol, Menu } = require('electron');
 const path = require('path');
 const url = require('url');
 
@@ -6,6 +6,9 @@ let mainWindow;
 
 function createWindow() {
     const { width, height } = screen.getPrimaryDisplay().workAreaSize;
+
+    // Remove menu bar
+    Menu.setApplicationMenu(null);
 
     mainWindow = new BrowserWindow({
         width: Math.floor(width * 0.9),
@@ -16,7 +19,8 @@ function createWindow() {
         },
         title: "TimeBlock.ai",
         backgroundColor: '#ffffff',
-        icon: path.join(__dirname, 'public', 'icon.png')
+        icon: path.join(__dirname, 'public', 'icon.png'),
+        autoHideMenuBar: true
     });
 
     if (app.isPackaged) {
