@@ -26,6 +26,9 @@
 ### Login Screen
 <img src="screenshots/login.png" alt="Login Screen" width="800"/>
 
+### Dashboard
+<img src="screenshots/dashboard.png" alt="Dashboard" width="800"/>
+
 </div>
 
 ---
